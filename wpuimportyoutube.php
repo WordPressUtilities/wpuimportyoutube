@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU Import Youtube
 Plugin URI: https://github.com/WordPressUtilities/wpuimportyoutube
-Version: 0.1
+Version: 0.2
 Description: Import latest youtube videos.
 Author: Darklg
 Author URI: http://darklg.me/
@@ -17,9 +17,9 @@ class WPUImportYoutube {
     private $post_type = '';
     private $is_importing = false;
     private $option_id = 'wpuimportyoutube_options';
+    private $cronhook = 'wpuimportyoutube__cron_hook';
 
     public function __construct() {
-        load_plugin_textdomain('wpuimportyoutube', false, dirname(plugin_basename(__FILE__)) . '/lang/');
         $this->set_options();
         add_action('plugins_loaded', array(&$this,
             'plugins_loaded'
@@ -30,20 +30,20 @@ class WPUImportYoutube {
         add_action($this->cronhook, array(&$this,
             'import'
         ));
+
         // Cron
         include 'inc/WPUBaseCron/WPUBaseCron.php';
         $this->basecron = new \wpuimportyoutube\WPUBaseCron();
-
     }
 
     public function set_options() {
-        $this->cronhook = 'wpuimportyoutube__cron_hook';
+        load_plugin_textdomain('wpuimportyoutube', false, dirname(plugin_basename(__FILE__)) . '/lang/');
         $this->post_type = apply_filters('wpuimportyoutube_posttypehook', 'youtube_videos');
         $this->post_type_info = apply_filters('wpuimportyoutube_posttypeinfo', array(
             'public' => true,
-            'name' => 'Video Youtube',
-            'label' => 'Video Youtube',
-            'plural' => 'Videos Youtube',
+            'name' => __('Youtube Video', 'wpuimportyoutube'),
+            'label' => __('Youtube Video', 'wpuimportyoutube'),
+            'plural' => __('Youtube Videos', 'wpuimportyoutube'),
             'female' => 1,
             'menu_icon' => 'dashicons-format-video'
         ));
@@ -69,27 +69,7 @@ class WPUImportYoutube {
         $this->users = $this->get_users_ids();
     }
 
-    public function get_users_ids() {
-        $users = array();
-
-        if (isset($this->settings_values['account_ids'])) {
-            $_account_ids = preg_replace('/\W+/', "#", $this->settings_values['account_ids']);
-            $_account_ids = explode("#", $_account_ids);
-            foreach ($_account_ids as $id) {
-                if (!empty($id)) {
-                    $users[] = $id;
-                }
-            }
-        }
-        return $users;
-    }
-
     public function plugins_loaded() {
-        $this->basecron->init(array(
-            'pluginname' => $this->options['plugin_name'],
-            'cronhook' => $this->cronhook,
-            'croninterval' => 3600
-        ));
         if (!is_admin()) {
             return;
         }
@@ -97,6 +77,9 @@ class WPUImportYoutube {
         // Admin page
         add_action('admin_menu', array(&$this,
             'admin_menu'
+        ));
+        add_filter("plugin_action_links_" . plugin_basename(__FILE__), array(&$this,
+            'add_settings_link'
         ));
         add_action('admin_post_wpuimportyoutube_postaction', array(&$this,
             'postAction'
@@ -183,6 +166,29 @@ class WPUImportYoutube {
         ), '', 110);
     }
 
+    /* Settings link */
+
+    public function add_settings_link($links) {
+        $settings_link = '<a href="' . $this->options['admin_url'] . '">' . __('Settings') . '</a>';
+        array_unshift($links, $settings_link);
+        return $links;
+    }
+
+    public function admin_page__prevnext() {
+        $str = array();
+        $prev = $this->basecron->get_previous_exec();
+        $next = $this->basecron->get_next_scheduled();
+        if (is_array($prev)) {
+            $str[] = sprintf(__('Previous automated import %s’%s’’ ago', 'wpuimportyoutube'), $prev['min'], $prev['sec']);
+        }
+        if (is_array($next)) {
+            $str[] = sprintf(__('Next automated import in %s’%s’’', 'wpuimportyoutube'), $next['min'], $next['sec']);
+        }
+        if (!empty($str)) {
+            return '<p>' . implode('<br />', $str) . '</p>';
+        }
+    }
+
     public function admin_settings() {
 
         echo '<div class="wrap"><h1>' . get_admin_page_title() . '</h1>';
@@ -191,8 +197,7 @@ class WPUImportYoutube {
         echo '<h2>' . __('Tools') . '</h2>';
         echo '<form action="' . admin_url('admin-post.php') . '" method="post">';
         echo '<input type="hidden" name="action" value="wpuimportyoutube_postaction">';
-        $next = $this->basecron->get_next_scheduled();
-        echo '<p>' . sprintf(__('Next automated import in %s’%s’’', 'wpuimportyoutube'), $next['min'], $next['sec']) . '</p>';
+        echo $this->admin_page__prevnext();
         echo '<p class="submit">';
         if (!$this->is_importing) {
             submit_button(__('Import now', 'wpuimportyoutube'), 'primary', 'import_now', false);
@@ -226,6 +231,25 @@ class WPUImportYoutube {
         }
         wp_safe_redirect(wp_get_referer());
         die();
+    }
+
+    /* ----------------------------------------------------------
+      Help
+    ---------------------------------------------------------- */
+
+    public function get_users_ids() {
+        $users = array();
+
+        if (isset($this->settings_values['account_ids'])) {
+            $_account_ids = preg_replace('/\W+/', "#", $this->settings_values['account_ids']);
+            $_account_ids = explode("#", $_account_ids);
+            foreach ($_account_ids as $id) {
+                if (!empty($id)) {
+                    $users[] = $id;
+                }
+            }
+        }
+        return $users;
     }
 
     /* ----------------------------------------------------------
@@ -378,6 +402,14 @@ class WPUImportYoutube {
     }
 
     public function deactivation() {
+        flush_rewrite_rules();
+        $this->basecron->uninstall();
+    }
+
+    public function uninstall() {
+        delete_option($this->option_id);
+        delete_post_meta_by_key('wpuimportyoutube_id');
+        delete_post_meta_by_key('wpuimportyoutube_video');
         flush_rewrite_rules();
         $this->basecron->uninstall();
     }

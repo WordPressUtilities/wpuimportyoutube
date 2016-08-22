@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: WPU Import Youtube\n"
-"POT-Creation-Date: 2016-08-21 20:11+0200\n"
+"POT-Creation-Date: 2016-08-22 11:36+0200\n"
 "PO-Revision-Date: \n"
 "Last-Translator: Darklg <darklg.blog@gmail.com>\n"
 "Language-Team: \n"
@@ -16,7 +16,7 @@ msgstr ""
 "X-Poedit-SearchPath-0: ../.\n"
 
 #: .././inc/WPUBaseSettings/WPUBaseSettings.php:61
-#: .././wpuimportyoutube.php:140 .././wpuimportyoutube.php:184
+#: .././wpuimportyoutube.php:121 .././wpuimportyoutube.php:164
 msgid "Import Settings"
 msgstr "Réglages d'import"
 
@@ -24,60 +24,73 @@ msgstr "Réglages d'import"
 msgid "Settings saved."
 msgstr "Paramètres sauvegardés."
 
-#: .././wpuimportyoutube.php:52 .././wpuimportyoutube.php:53
+#: .././wpuimportyoutube.php:44 .././wpuimportyoutube.php:45
+msgid "Youtube Video"
+msgstr "Vidéo YouTube"
+
+#: .././wpuimportyoutube.php:46
+msgid "Youtube Videos"
+msgstr "Vidéos YouTube"
+
+#: .././wpuimportyoutube.php:53 .././wpuimportyoutube.php:54
 msgid "Authors"
 msgstr "Auteurs"
 
-#: .././wpuimportyoutube.php:54
+#: .././wpuimportyoutube.php:55
 msgid "Author"
 msgstr "Auteur"
 
-#: .././wpuimportyoutube.php:148
+#: .././wpuimportyoutube.php:129
 msgid "Posts are created with a draft status."
 msgstr "Les articles sont créés avec un statut \"brouillon\"."
 
-#: .././wpuimportyoutube.php:149
+#: .././wpuimportyoutube.php:130
 msgid "Import as draft"
 msgstr "Importer comme brouillon"
 
-#: .././wpuimportyoutube.php:154
+#: .././wpuimportyoutube.php:135
 msgid "One Youtube account ID by line (ex : pewdiepie, caseyneistat)"
 msgstr "Un ID de compte Youtube par ligne (ex : pewdiepie, caseyneistat)"
 
-#: .././wpuimportyoutube.php:155
+#: .././wpuimportyoutube.php:136
 msgid "Account IDs"
 msgstr "IDs de comptes"
 
-#: .././wpuimportyoutube.php:184
+#: .././wpuimportyoutube.php:164 .././wpuimportyoutube.php:172
 msgid "Settings"
 msgstr "Réglages"
 
-#: .././wpuimportyoutube.php:194
-msgid "Tools"
-msgstr "Outils"
+#: .././wpuimportyoutube.php:182
+#, php-format
+msgid "Previous automated import %s’%s’’ ago"
+msgstr "Précédent import automatique il y a %smin %ss"
 
-#: .././wpuimportyoutube.php:198
+#: .././wpuimportyoutube.php:185
 #, php-format
 msgid "Next automated import in %s’%s’’"
 msgstr "Prochain import automatique dans %smin %ss"
 
-#: .././wpuimportyoutube.php:201
+#: .././wpuimportyoutube.php:197
+msgid "Tools"
+msgstr "Outils"
+
+#: .././wpuimportyoutube.php:203
 msgid "Import now"
 msgstr "Importer maintenant"
 
-#: .././wpuimportyoutube.php:211
+#: .././wpuimportyoutube.php:213
 msgid "Save Changes"
 msgstr "Sauvegarder les modifications"
 
-#: .././wpuimportyoutube.php:221
+#: .././wpuimportyoutube.php:223
 msgid "An import is already running"
 msgstr "Une importation est déjà en cours d'exécution"
 
-#: .././wpuimportyoutube.php:224
+#: .././wpuimportyoutube.php:226
 #, php-format
 msgid "Imported videos : %s"
 msgstr "Vidéos importées : %s"
 
-#: .././wpuimportyoutube.php:226
+#: .././wpuimportyoutube.php:228
 msgid "No new imports"
 msgstr "Aucun nouvel import"
