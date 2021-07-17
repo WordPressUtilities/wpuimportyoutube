@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU Import Youtube
 Plugin URI: https://github.com/WordPressUtilities/wpuimportyoutube
-Version: 0.2
+Version: 0.3.0
 Description: Import latest youtube videos.
 Author: Darklg
 Author URI: http://darklg.me/
@@ -12,6 +12,8 @@ License URI: http://opensource.org/licenses/MIT
 */
 
 class WPUImportYoutube {
+
+    private $plugin_version = '0.3.0';
 
     private $users = array();
     private $post_type = '';
@@ -108,9 +110,15 @@ class WPUImportYoutube {
 
         /* Messages */
         if (is_admin()) {
-            include 'inc/WPUBaseMessages/WPUBaseMessages.php';
+            include dirname(__FILE__) . '/inc/WPUBaseMessages/WPUBaseMessages.php';
             $this->messages = new \wpuimportyoutube\WPUBaseMessages($this->options['plugin_id']);
         }
+
+        include dirname(__FILE__) . '/inc/WPUBaseUpdate/WPUBaseUpdate.php';
+        $this->settings_update = new \wpuimportyoutube\WPUBaseUpdate(
+            'WordPressUtilities',
+            'wpuimportyoutube',
+            $this->plugin_version);
 
         /* Settings */
         $this->settings_details = array(
@@ -139,7 +147,7 @@ class WPUImportYoutube {
 
         if (is_admin()) {
             // Settings
-            include 'inc/WPUBaseSettings/WPUBaseSettings.php';
+            include dirname(__FILE__) . '/inc/WPUBaseSettings/WPUBaseSettings.php';
             new \wpuimportyoutube\WPUBaseSettings($this->settings_details, $this->settings);
         }
     }
@@ -163,7 +171,7 @@ class WPUImportYoutube {
     public function admin_menu() {
         add_submenu_page('edit.php?post_type=' . $this->post_type, $this->options['plugin_name'] . ' - ' . __('Settings'), __('Import Settings', 'wpuimportyoutube'), $this->options['plugin_userlevel'], $this->options['plugin_pageslug'], array(&$this,
             'admin_settings'
-        ), '', 110);
+        ), 110);
     }
 
     /* Settings link */
@@ -379,6 +387,13 @@ class WPUImportYoutube {
 
     public function add_thumbnail_from_video($post_id, $video) {
         global $wpdb;
+
+        /* Test biggest thumbnail */
+        $big_thumbnail = 'https://img.youtube.com/vi/' . $video['id'] . '/maxresdefault.jpg';
+        $big_thumbnail_resp_code = wp_remote_retrieve_response_code(wp_remote_head($big_thumbnail));
+        if ($big_thumbnail_resp_code == 200) {
+            $video['thumbnail'] = $big_thumbnail;
+        }
 
         // Upload image
         $src = media_sideload_image($video['thumbnail'], $post_id, $video['title'], 'src');
