@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU Import Youtube
 Plugin URI: https://github.com/WordPressUtilities/wpuimportyoutube
-Version: 0.3.0
+Version: 0.4.0
 Description: Import latest youtube videos.
 Author: Darklg
 Author URI: http://darklg.me/
@@ -13,7 +13,7 @@ License URI: http://opensource.org/licenses/MIT
 
 class WPUImportYoutube {
 
-    private $plugin_version = '0.3.0';
+    private $plugin_version = '0.4.0';
 
     private $users = array();
     private $post_type = '';
@@ -69,6 +69,7 @@ class WPUImportYoutube {
         $this->options['admin_url'] = admin_url('edit.php?post_type=' . $this->post_type . '&page=' . $this->options['plugin_id']);
         $this->import_draft = (isset($this->settings_values['import_draft']) && $this->settings_values['import_draft'] == '1');
         $this->users = $this->get_users_ids();
+        $this->channels = $this->get_channels_ids();
     }
 
     public function plugins_loaded() {
@@ -142,6 +143,12 @@ class WPUImportYoutube {
                 'type' => 'textarea',
                 'help' => __('One Youtube account ID by line (ex : pewdiepie, caseyneistat)', 'wpuimportyoutube'),
                 'label' => __('Account IDs', 'wpuimportyoutube')
+            ),
+            'channel_ids' => array(
+                'section' => 'import',
+                'type' => 'textarea',
+                'help' => __('One Youtube channel ID by line (ex : channel/UCtinbF-Q-fVthA0qrFQTgXQ)', 'wpuimportyoutube'),
+                'label' => __('Channel IDs', 'wpuimportyoutube')
             )
         );
 
@@ -228,12 +235,12 @@ class WPUImportYoutube {
         if (isset($_POST['import_now'])) {
             $nb_imports = $this->import();
             if ($nb_imports === false) {
-                $this->messages->set_message('already_import', sprintf(__('An import is already running', 'wpuimportyoutube'), $nb_imports));
+                $this->messages->set_message('already_import', __('An import is already running', 'wpuimportyoutube'), 'error');
             } else {
                 if ($nb_imports > 0) {
-                    $this->messages->set_message('imported_nb', sprintf(__('Imported videos : %s', 'wpuimportyoutube'), $nb_imports));
+                    $this->messages->set_message('imported_nb', sprintf(__('Imported videos : %s', 'wpuimportyoutube'), $nb_imports),'updated');
                 } else {
-                    $this->messages->set_message('imported_0', __('No new imports', 'wpuimportyoutube'), 'created');
+                    $this->messages->set_message('imported_0', __('No new imports', 'wpuimportyoutube'), 'updated');
                 }
             }
         }
@@ -260,6 +267,21 @@ class WPUImportYoutube {
         return $users;
     }
 
+    public function get_channels_ids() {
+        $channels = array();
+
+        if (isset($this->settings_values['channel_ids'])) {
+            $_channel_ids = preg_replace('/([^A-Za-z0-9-_]+)/', "#", $this->settings_values['channel_ids']);
+            $_channel_ids = explode("#", $_channel_ids);
+            foreach ($_channel_ids as $id) {
+                if (!empty($id)) {
+                    $channels[] = $id;
+                }
+            }
+        }
+        return $channels;
+    }
+
     /* ----------------------------------------------------------
       Import
     ---------------------------------------------------------- */
@@ -268,19 +290,18 @@ class WPUImportYoutube {
         $nb_imports = 0;
         $this->is_importing = true;
         foreach ($this->users as $user) {
-            $nb_imports += $this->import_videos_to_posts($user);
+            $nb_imports += $this->import_videos_to_posts($this->get_videos_for_user($user));
+        }
+        foreach ($this->channels as $channel) {
+            $nb_imports += $this->import_videos_to_posts($this->get_videos_for_channel($channel));
         }
         $this->is_importing = false;
         return $nb_imports;
     }
 
-    public function import_videos_to_posts($user = false) {
-        if (!$user) {
-            return 0;
-        }
+    public function import_videos_to_posts($videos) {
         $nb_imports = 0;
         $ids = $this->get_last_imported_videos_ids();
-        $videos = $this->get_videos_for_user($user);
         if (!is_array($videos)) {
             return 0;
         }
@@ -302,12 +323,19 @@ class WPUImportYoutube {
     }
 
     public function get_videos_for_user($user = false) {
+        return $this->get_videos_from_url('https://www.youtube.com/feeds/videos.xml?user=' . $user, 'user=' . $user);
+    }
+
+    public function get_videos_for_channel($channel = false) {
+        return $this->get_videos_from_url('https://www.youtube.com/feeds/videos.xml?channel_id=' . $channel, 'channel_id=' . $channel);
+    }
+
+    public function get_videos_from_url($_url = false, $_urlinfo = false) {
         $videos = array();
-        if (!$user) {
+        if (!$_url) {
             return $videos;
         }
         /* Import from RSS */
-        $_url = 'https://www.youtube.com/feeds/videos.xml?user=' . $user;
         $_request = wp_remote_get($_url);
         if (is_wp_error($_request)) {
             return array();
@@ -315,10 +343,14 @@ class WPUImportYoutube {
         /* Extract datas */
         $_body = wp_remote_retrieve_body($_request);
         $datas = simplexml_load_string($_body);
-        $namespaces = $datas->getNamespaces(true);
         if (!is_object($datas)) {
+            if ($_urlinfo) {
+                $this->messages->set_message('import_failed', sprintf(__('WPU Import Youtube : Import from %s failed', 'wpuimportyoutube'), $_urlinfo),'error');
+            }
+
             return array();
         }
+        $namespaces = $datas->getNamespaces(true);
         $videos = array();
         foreach ($datas->entry as $item) {
             $media_group = $item->children($namespaces['media'])->group->children($namespaces['media']);
@@ -389,10 +421,9 @@ class WPUImportYoutube {
         global $wpdb;
 
         /* Test biggest thumbnail */
-        $big_thumbnail = 'https://img.youtube.com/vi/' . $video['id'] . '/maxresdefault.jpg';
-        $big_thumbnail_resp_code = wp_remote_retrieve_response_code(wp_remote_head($big_thumbnail));
-        if ($big_thumbnail_resp_code == 200) {
-            $video['thumbnail'] = $big_thumbnail;
+        $biggest_thumbnail = $this->get_biggest_thumbnail_available($video['id']);
+        if ($biggest_thumbnail) {
+            $video['thumbnail'] = $biggest_thumbnail;
         }
 
         // Upload image
@@ -405,6 +436,21 @@ class WPUImportYoutube {
         ));
 
         set_post_thumbnail($post_id, $att_id);
+    }
+
+    public function get_biggest_thumbnail_available($video_id) {
+        $resolution = array(
+            'maxresdefault',
+            'sddefault'
+        );
+        foreach ($resolution as $k) {
+            $big_thumbnail = 'https://img.youtube.com/vi/' . $video_id . '/' . $k . '.jpg';
+            $big_thumbnail_resp_code = wp_remote_retrieve_response_code(wp_remote_head($big_thumbnail));
+            if ($big_thumbnail_resp_code == 200) {
+                return $big_thumbnail;
+            }
+        }
+        return false;
     }
 
     /* ----------------------------------------------------------
