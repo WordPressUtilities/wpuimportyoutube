@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU Import Youtube
 Plugin URI: https://github.com/WordPressUtilities/wpuimportyoutube
-Version: 0.4.1
+Version: 0.4.2
 Description: Import latest youtube videos.
 Author: Darklg
 Author URI: http://darklg.me/
@@ -13,7 +13,7 @@ License URI: http://opensource.org/licenses/MIT
 
 class WPUImportYoutube {
 
-    private $plugin_version = '0.4.1';
+    private $plugin_version = '0.4.2';
 
     private $users = array();
     private $post_type = '';
@@ -238,7 +238,7 @@ class WPUImportYoutube {
                 $this->messages->set_message('already_import', __('An import is already running', 'wpuimportyoutube'), 'error');
             } else {
                 if ($nb_imports > 0) {
-                    $this->messages->set_message('imported_nb', sprintf(__('Imported videos : %s', 'wpuimportyoutube'), $nb_imports),'updated');
+                    $this->messages->set_message('imported_nb', sprintf(__('Imported videos : %s', 'wpuimportyoutube'), $nb_imports), 'updated');
                 } else {
                     $this->messages->set_message('imported_0', __('No new imports', 'wpuimportyoutube'), 'updated');
                 }
@@ -345,7 +345,7 @@ class WPUImportYoutube {
         $datas = simplexml_load_string($_body);
         if (!is_object($datas)) {
             if ($_urlinfo) {
-                $this->messages->set_message('import_failed', sprintf(__('WPU Import Youtube : Import from %s failed', 'wpuimportyoutube'), $_urlinfo),'error');
+                $this->messages->set_message('import_failed', sprintf(__('WPU Import Youtube : Import from %s failed', 'wpuimportyoutube'), $_urlinfo), 'error');
             }
 
             return array();
@@ -406,6 +406,10 @@ class WPUImportYoutube {
     }
 
     public function get_or_create_post_taxonomy($taxonomy, $name, $term_slug) {
+        if (!taxonomy_exists($taxonomy)) {
+            return false;
+        }
+
         /* Create it if null */
         $tmp_taxo = get_term_by('slug', $term_slug, $taxonomy);
         if (!$tmp_taxo) {
@@ -427,6 +431,11 @@ class WPUImportYoutube {
         }
 
         // Upload image
+        if (!function_exists('media_sideload_image')) {
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+        }
         $src = media_sideload_image($video['thumbnail'], $post_id, $video['title'], 'src');
 
         // Extract attachment id
