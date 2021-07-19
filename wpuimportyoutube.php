@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU Import Youtube
 Plugin URI: https://github.com/WordPressUtilities/wpuimportyoutube
-Version: 0.4.0
+Version: 0.4.1
 Description: Import latest youtube videos.
 Author: Darklg
 Author URI: http://darklg.me/
@@ -13,7 +13,7 @@ License URI: http://opensource.org/licenses/MIT
 
 class WPUImportYoutube {
 
-    private $plugin_version = '0.4.0';
+    private $plugin_version = '0.4.1';
 
     private $users = array();
     private $post_type = '';
@@ -211,7 +211,7 @@ class WPUImportYoutube {
         settings_errors($this->settings_details['option_id']);
         echo '<h2>' . __('Tools') . '</h2>';
         echo '<form action="' . admin_url('admin-post.php') . '" method="post">';
-        echo '<input type="hidden" name="action" value="wpuimportyoutube_postaction">';
+        echo '<input type="hidden" name="action" value="wpuimportyoutube_postaction" />';
         echo $this->admin_page__prevnext();
         echo '<p class="submit">';
         if (!$this->is_importing) {
@@ -382,7 +382,7 @@ class WPUImportYoutube {
             'post_title' => $video['title'],
             'post_content' => $video['description'] . "\n\n" . $video['video'],
             'post_date' => date('Y-m-d H:i:s', $video['time']),
-            'post_status' => $this->import_draft ? 'draft' : 'published',
+            'post_status' => $this->import_draft ? 'draft' : 'publish',
             'post_author' => 1,
             'post_type' => $this->post_type
         );
