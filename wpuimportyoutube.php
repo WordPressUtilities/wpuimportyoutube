@@ -3,7 +3,7 @@
 /*
 Plugin Name: WPU Import Youtube
 Plugin URI: https://github.com/WordPressUtilities/wpuimportyoutube
-Version: 0.4.2
+Version: 0.4.3
 Description: Import latest youtube videos.
 Author: Darklg
 Author URI: http://darklg.me/
@@ -13,7 +13,7 @@ License URI: http://opensource.org/licenses/MIT
 
 class WPUImportYoutube {
 
-    private $plugin_version = '0.4.2';
+    private $plugin_version = '0.4.3';
 
     private $users = array();
     private $post_type = '';

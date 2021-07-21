@@ -4,7 +4,7 @@ namespace wpuimportyoutube;
 /*
 Class Name: WPU Base Cron
 Description: A class to handle crons
-Version: 0.2.5
+Version: 0.2.6
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
@@ -38,7 +38,9 @@ class WPUBaseCron {
         ), 99);
 
         /* Check cron */
-        $this->check_cron();
+        add_action('init',array(&$this,
+            'check_cron'
+        ));
     }
 
     /* Create schedule */
